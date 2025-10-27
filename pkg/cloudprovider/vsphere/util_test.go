@@ -21,6 +21,59 @@ import (
 	"testing"
 )
 
+func TestShouldProcessNode(t *testing.T) {
+	tests := []struct {
+		name       string
+		providerID string
+		expected   bool
+	}{
+		{
+			name:       "empty ProviderID should be processed",
+			providerID: "",
+			expected:   true,
+		},
+		{
+			name:       "vsphere ProviderID should be processed",
+			providerID: "vsphere://422e4956-ad22-1139-6d72-59cc8f26bc90",
+			expected:   true,
+		},
+		{
+			name:       "aws ProviderID should not be processed",
+			providerID: "aws:///us-west-2a/i-1234567890abcdef0",
+			expected:   false,
+		},
+		{
+			name:       "azure ProviderID should not be processed",
+			providerID: "azure:///subscriptions/12345678-1234-1234-1234-123456789012/resourceGroups/my-rg/providers/Microsoft.Compute/virtualMachines/my-vm",
+			expected:   false,
+		},
+		{
+			name:       "gcp ProviderID should not be processed",
+			providerID: "gce://my-project/us-central1-a/my-instance",
+			expected:   false,
+		},
+		{
+			name:       "custom ProviderID should not be processed",
+			providerID: "custom://some-node-id",
+			expected:   false,
+		},
+		{
+			name:       "malformed ProviderID should not be processed",
+			providerID: "not-a-valid-provider-id",
+			expected:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ShouldProcessNode(tt.providerID)
+			if result != tt.expected {
+				t.Errorf("ShouldProcessNode(%q) = %v, expected %v", tt.providerID, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestInvalidProviderID(t *testing.T) {
 	providerID := ""
 

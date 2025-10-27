@@ -301,6 +301,12 @@ func (vs *VSphere) nodeAdded(obj interface{}) {
 		return
 	}
 
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(node.Spec.ProviderID) {
+		klog.V(4).Infof("nodeAdded: skipping node %s with ProviderID %s (not managed by vSphere)", node.Name, node.Spec.ProviderID)
+		return
+	}
+
 	vs.nodeManager.RegisterNode(node)
 	if vs.routes != nil {
 		vs.routes.AddNode(node)

@@ -84,6 +84,21 @@ func ErrOnLocalOnlyIPAddr(addr string) error {
 	return nil
 }
 
+// ShouldProcessNode determines if a node should be processed by this vSphere
+// cloud provider based on its ProviderID. It returns true if:
+// - The ProviderID is empty (unset), allowing the controller to manage it
+// - The ProviderID starts with "vsphere://", indicating it's a vSphere node
+// It returns false if the ProviderID is set to a different cloud provider.
+func ShouldProcessNode(providerID string) bool {
+	// If ProviderID is empty, we should process this node
+	if providerID == "" {
+		return true
+	}
+
+	// If ProviderID is set, only process nodes that belong to vSphere
+	return strings.HasPrefix(providerID, ProviderPrefix)
+}
+
 // ArrayContainsCaseInsensitive detects whether a given array of string contains
 // the given string, ignoring case.
 func ArrayContainsCaseInsensitive(arr []string, str string) bool {
