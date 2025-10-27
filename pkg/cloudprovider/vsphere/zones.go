@@ -18,6 +18,7 @@ package vsphere
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/vmware/govmomi/vim25/mo"
@@ -165,6 +166,12 @@ func (z *zones) GetZoneByProviderID(ctx context.Context, providerID string) (clo
 	klog.V(4).Info("zones.GetZoneByProviderID() called with ", providerID)
 
 	zone := cloudprovider.Zone{}
+
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(providerID) {
+		klog.V(4).Infof("GetZoneByProviderID: skipping ProviderID %s (not managed by vSphere)", providerID)
+		return zone, fmt.Errorf("node with ProviderID %s is not managed by vSphere cloud provider", providerID)
+	}
 
 	if len(z.region) == 0 || len(z.zone) == 0 {
 		return zone, nil

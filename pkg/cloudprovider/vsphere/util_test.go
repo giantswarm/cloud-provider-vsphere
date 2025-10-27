@@ -38,6 +38,11 @@ func TestShouldProcessNode(t *testing.T) {
 			expected:   true,
 		},
 		{
+			name:       "raw UUID should be processed for backward compatibility",
+			providerID: "422e4956-ad22-1139-6d72-59cc8f26bc90",
+			expected:   true,
+		},
+		{
 			name:       "aws ProviderID should not be processed",
 			providerID: "aws:///us-west-2a/i-1234567890abcdef0",
 			expected:   false,
@@ -53,14 +58,19 @@ func TestShouldProcessNode(t *testing.T) {
 			expected:   false,
 		},
 		{
+			name:       "proxmox ProviderID should not be processed",
+			providerID: "proxmox://xxx",
+			expected:   false,
+		},
+		{
 			name:       "custom ProviderID should not be processed",
 			providerID: "custom://some-node-id",
 			expected:   false,
 		},
 		{
-			name:       "malformed ProviderID should not be processed",
+			name:       "malformed ProviderID without protocol should be processed for backward compatibility",
 			providerID: "not-a-valid-provider-id",
-			expected:   false,
+			expected:   true,
 		},
 	}
 

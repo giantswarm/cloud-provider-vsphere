@@ -321,6 +321,12 @@ func (vs *VSphere) nodeDeleted(obj interface{}) {
 		return
 	}
 
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(node.Spec.ProviderID) {
+		klog.V(4).Infof("nodeDeleted: skipping node %s with ProviderID %s (not managed by vSphere)", node.Name, node.Spec.ProviderID)
+		return
+	}
+
 	vs.nodeManager.UnregisterNode(node)
 	if vs.routes != nil {
 		vs.routes.DeleteNode(node)
