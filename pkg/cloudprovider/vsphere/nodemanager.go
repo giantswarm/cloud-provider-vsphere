@@ -85,6 +85,12 @@ func newNodeManager(cfg *ccfg.CPIConfig, cm *cm.ConnectionManager) *NodeManager 
 func (nm *NodeManager) RegisterNode(node *v1.Node) {
 	klog.V(4).Info("RegisterNode ENTER: ", node.Name)
 
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(node.Spec.ProviderID) {
+		klog.V(4).Infof("RegisterNode: skipping node %s with ProviderID %s (not managed by vSphere)", node.Name, node.Spec.ProviderID)
+		return
+	}
+
 	uuid := ConvertK8sUUIDtoNormal(node.Status.NodeInfo.SystemUUID)
 	if err := nm.DiscoverNode(uuid, cm.FindVMByUUID); err != nil {
 		klog.Errorf("error discovering node %s: %v", node.Name, err)
