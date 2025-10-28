@@ -23,6 +23,7 @@ import (
 	"os"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
 	klog "k8s.io/klog/v2"
@@ -38,8 +39,11 @@ var (
 	ErrNodeNotFound = errors.New("node not found")
 )
 
-func newInstances(nodeManager *NodeManager) cloudprovider.Instances {
-	return &instances{nodeManager}
+func newInstances(nodeManager *NodeManager, vs *VSphere) cloudprovider.Instances {
+	return &instances{
+		nodeManager: nodeManager,
+		vs:          vs,
+	}
 }
 
 var _ cloudprovider.Instances = &instances{}
@@ -148,10 +152,92 @@ func (i *instances) CurrentNodeName(ctx context.Context, hostname string) (types
 	return types.NodeName(hostname), nil
 }
 
+// shouldSkipNodeDeletion checks if a node should be skipped from deletion based on labels
+func (i *instances) shouldSkipNodeDeletion(ctx context.Context, providerID string) bool {
+	klog.V(4).Infof("shouldSkipNodeDeletion called for %s", providerID)
+
+	if i.vs == nil {
+		klog.V(4).Info("shouldSkipNodeDeletion: vs is nil")
+		return false
+	}
+	if i.vs.cfg == nil {
+		klog.V(4).Info("shouldSkipNodeDeletion: cfg is nil")
+		return false
+	}
+	if i.vs.cfg.Nodes.SkipNodeLabel == "" {
+		klog.V(4).Info("shouldSkipNodeDeletion: SkipNodeLabel is empty")
+		return false
+	}
+	if i.vs.kubeClient == nil {
+		klog.V(4).Info("shouldSkipNodeDeletion: kubeClient is nil")
+		return false
+	}
+
+	klog.V(4).Infof("shouldSkipNodeDeletion: Using skip label '%s' for provider ID %s", i.vs.cfg.Nodes.SkipNodeLabel, providerID)
+
+	// Find the node by provider ID - try field selector first, then fallback to listing all nodes
+	nodeList, err := i.vs.kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{
+		FieldSelector: "spec.providerID=" + providerID,
+	})
+	if err != nil {
+		klog.V(4).Infof("Failed to lookup node by provider ID with field selector %s: %v", providerID, err)
+		// Fallback to listing all nodes
+		nodeList, err = i.vs.kubeClient.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			klog.V(4).Infof("Failed to list all nodes: %v", err)
+			return false
+		}
+	}
+
+	var node *v1.Node
+	if len(nodeList.Items) == 0 {
+		klog.V(4).Infof("No nodes found when searching for provider ID %s", providerID)
+		return false
+	}
+
+	// If we got results from field selector, use first result
+	if len(nodeList.Items) == 1 {
+		node = &nodeList.Items[0]
+	} else {
+		// Search through all nodes for matching provider ID
+		for i := range nodeList.Items {
+			if nodeList.Items[i].Spec.ProviderID == providerID {
+				node = &nodeList.Items[i]
+				break
+			}
+		}
+		if node == nil {
+			klog.V(4).Infof("No node found with provider ID %s after searching all nodes", providerID)
+			return false
+		}
+	}
+	klog.V(4).Infof("Found node %s for provider ID %s", node.Name, providerID)
+
+	if node.Labels == nil {
+		klog.V(4).Infof("Node %s has no labels", node.Name)
+		return false
+	}
+
+	klog.V(4).Infof("Node %s labels: %v", node.Name, node.Labels)
+	_, hasLabel := node.Labels[i.vs.cfg.Nodes.SkipNodeLabel]
+	klog.V(4).Infof("Node %s has skip label '%s': %t", node.Name, i.vs.cfg.Nodes.SkipNodeLabel, hasLabel)
+
+	if hasLabel {
+		klog.V(2).Infof("SKIPPING node deletion for %s due to presence of skip label %s", node.Name, i.vs.cfg.Nodes.SkipNodeLabel)
+	}
+	return hasLabel
+}
+
 // InstanceExistsByProviderID returns true if the instance identified by
 // providerID is running.
 func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID string) (bool, error) {
 	klog.V(4).Info("instances.InstanceExistsByProviderID() called with ", providerID)
+
+	// Check if node should be skipped from deletion
+	if i.shouldSkipNodeDeletion(ctx, providerID) {
+		klog.V(4).Info("instances.InstanceExistsByProviderID() SKIPPED DELETION for ", providerID)
+		return true, nil
+	}
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)

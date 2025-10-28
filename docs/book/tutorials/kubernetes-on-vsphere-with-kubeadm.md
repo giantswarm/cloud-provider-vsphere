@@ -466,6 +466,9 @@ global:
   # settings for using k8s secret
   secretName: cpi-global-secret
   secretNamespace: kube-system
+  # Label key that when present on a node, causes the cloud provider to skip processing that node.
+  # If empty, all nodes will be processed.
+  skipNodeLabel: "node.cloudprovider.kubernetes.io/skip"
 
 # vcenter section
 vcenter:

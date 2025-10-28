@@ -31,7 +31,7 @@ import (
 // StartControllers starts ippool_controller and node_controller
 func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
 	informerManager *k8s.InformerManager, clusterName, clusterNS string, ownerRef *metav1.OwnerReference,
-	vpcModeEnabled bool, podIPPoolType string) error {
+	vpcModeEnabled bool, podIPPoolType string, skipNodeLabel string) error {
 
 	if clusterName == "" {
 		return fmt.Errorf("cluster name can't be empty")
@@ -52,7 +52,7 @@ func StartControllers(scCfg *rest.Config, client kubernetes.Interface,
 
 	ippManager.StartIPPoolInformers()
 
-	nodeController := node.NewController(client, ippManager, informerManager, clusterName, clusterNS, ownerRef)
+	nodeController := node.NewController(client, ippManager, informerManager, clusterName, clusterNS, ownerRef, skipNodeLabel)
 	go nodeController.Run(context.Background().Done())
 
 	return nil

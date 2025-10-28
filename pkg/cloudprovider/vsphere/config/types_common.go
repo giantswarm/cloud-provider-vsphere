@@ -43,6 +43,9 @@ type Nodes struct {
 	// status.addresses fields.
 	ExcludeInternalNetworkSubnetCIDR string
 	ExcludeExternalNetworkSubnetCIDR string
+	// Label key that when present on a node, causes the cloud provider to skip processing that node.
+	// If empty, all nodes will be processed.
+	SkipNodeLabel string
 }
 
 // CPIConfig is used to read and store information (related only to the CPI) from the cloud configuration file

@@ -42,6 +42,7 @@ func (ccy *CPIConfigYAML) CreateConfig() *CPIConfig {
 			ExternalVMNetworkName:            ccy.Nodes.ExternalVMNetworkName,
 			ExcludeInternalNetworkSubnetCIDR: ccy.Nodes.ExcludeInternalNetworkSubnetCIDR,
 			ExcludeExternalNetworkSubnetCIDR: ccy.Nodes.ExcludeExternalNetworkSubnetCIDR,
+			SkipNodeLabel:                    ccy.Nodes.SkipNodeLabel,
 		},
 	}
 

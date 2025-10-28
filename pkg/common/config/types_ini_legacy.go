@@ -63,6 +63,9 @@ type GlobalINI struct {
 	// ipv4 - IPv4 addresses only (Default)
 	// ipv6 - IPv6 addresses only
 	IPFamily string `gcfg:"ip-family"`
+	// Label key that when present on a node, causes the cloud provider to skip processing that node.
+	// If empty, all nodes will be processed.
+	SkipNodeLabel string `gcfg:"skip-node-label"`
 }
 
 // VirtualCenterConfigINI contains information used to access a remote vCenter

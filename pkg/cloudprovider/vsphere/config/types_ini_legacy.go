@@ -42,6 +42,9 @@ type NodesINI struct {
 	// status.addresses fields.
 	ExcludeInternalNetworkSubnetCIDR string `gcfg:"exclude-internal-network-subnet-cidr"`
 	ExcludeExternalNetworkSubnetCIDR string `gcfg:"exclude-external-network-subnet-cidr"`
+	// Label key that when present on a node, causes the cloud provider to skip processing that node.
+	// If empty, all nodes will be processed.
+	SkipNodeLabel string `gcfg:"skip-node-label"`
 }
 
 // CPIConfigINI is the INI representation

@@ -33,6 +33,7 @@ Here's the entire cloud config spec using example values:
   secret-name = ""
   secret-namespace = ""
   ip-family = "ipv4"
+  skip-node-label = "node.cloudprovider.kubernetes.io/skip"
 
 [VirtualCenter "10.0.0.1"]
   user = "viadmin@vmare.local"
@@ -55,6 +56,7 @@ Here's the entire cloud config spec using example values:
   external-vm-network-name = "External/Outbound Traffic"
   exclude-internal-network-subnet-cidr = "192.0.2.0/24,fe80::1/128"
   exclude-external-network-subnet-cidr = "192.1.2.0/24,fe80::2/128"
+  skip-node-label = "node.cloudprovider.kubernetes.io/skip"
 ```
 
 There are 4 sections in the cloud config file, let's break down the fields in each section:
@@ -108,6 +110,10 @@ fields in `Global` become the default if they are not specified in other section
   # ipv4 - IPv4 addresses only (Default)
   # ipv6 - IPv6 addresses only
   IPFamily string `gcfg:"ip-family"`
+  
+  # Label key that when present on a node, causes the cloud provider to skip processing that node.
+  # If empty, all nodes will be processed. This applies to both regular vSphere and vSphere Paravirtual modes.
+  skip-node-label = "node.cloudprovider.kubernetes.io/skip"
 ```
 
 ### VirtualCenter
@@ -232,6 +238,12 @@ address that is not a Localhost address.
   # External network that fall within the provided subnet ranges. This
   # configuration has the highest precedence. See notes above for details.
   exclude-external-network-subnet-cidr = "192.1.2.0/24,fe80::2/128"
+  
+  # Label key that when present on a node, causes the cloud provider to skip processing that node.
+  # If empty, all nodes will be processed. This applies to both regular vSphere and vSphere Paravirtual modes.
+  # When a node has this label, it will not be registered with vCenter, its network addresses will not be discovered,
+  # routes will not be created, and IP pool allocation will be skipped.
+  skip-node-label = "node.cloudprovider.kubernetes.io/skip"
 ```
 
 ### Storing vCenter Credentials in a Kubernetes Secret

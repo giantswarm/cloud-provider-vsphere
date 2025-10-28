@@ -53,6 +53,9 @@ type Global struct {
 	// 2) we are not in a k8s env, namely DC/OS, since CSI is CO agnostic
 	// Default: /etc/cloud/credentials
 	SecretsDirectory string
+	// Label key that when present on a node, causes the cloud provider to skip processing that node.
+	// If empty, all nodes will be processed.
+	SkipNodeLabel string
 }
 
 // VirtualCenterConfig struct

@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	cloudprovider "k8s.io/cloud-provider"
 
 	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
@@ -57,6 +58,7 @@ type VSphere struct {
 	nodeManager       *NodeManager
 	informMgr         *k8s.InformerManager
 	nsxtConnectorMgr  *nsxt.ConnectorManager
+	kubeClient        kubernetes.Interface
 }
 
 // NodeInfo is information about a Kubernetes node.
@@ -106,6 +108,7 @@ type NodeManager struct {
 
 type instances struct {
 	nodeManager *NodeManager
+	vs          *VSphere
 }
 
 type zones struct {

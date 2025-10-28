@@ -122,6 +122,7 @@ func (vs *VSphere) Initialize(clientBuilder cloudprovider.ControllerClientBuilde
 	if err == nil {
 		klog.V(1).Info("Kubernetes Client Init Succeeded")
 
+		vs.kubeClient = client
 		vs.informMgr = k8s.NewInformer(client, true)
 
 		connMgr := cm.NewConnectionManager(&vs.cfg.Config, vs.informMgr, client)
@@ -264,9 +265,9 @@ func buildVSphereFromConfig(cfg *ccfg.CPIConfig, nsxtcfg *ncfg.Config, lbcfg *lc
 		nsxtConnectorMgr: ncm,
 		loadbalancer:     lb,
 		routes:           routes,
-		instances:        newInstances(nm),
 		zones:            newZones(nm, cfg.Labels.Zone, cfg.Labels.Region),
 	}
+	vs.instances = newInstances(nm, &vs)
 	return &vs, nil
 }
 
@@ -293,11 +294,32 @@ func logout(vs *VSphere) {
 	klog.Info("logout: finished")
 }
 
+// shouldSkipNode returns true if the node has a label that causes it to be skipped
+func (vs *VSphere) shouldSkipNode(node *v1.Node) bool {
+	if vs.cfg == nil || vs.cfg.Nodes.SkipNodeLabel == "" {
+		return false
+	}
+
+	if node.Labels == nil {
+		return false
+	}
+
+	_, hasLabel := node.Labels[vs.cfg.Nodes.SkipNodeLabel]
+	if hasLabel {
+		klog.V(4).Infof("Skipping node %s due to presence of skip label %s", node.Name, vs.cfg.Nodes.SkipNodeLabel)
+	}
+	return hasLabel
+}
+
 // Notification handler when node is added into k8s cluster.
 func (vs *VSphere) nodeAdded(obj interface{}) {
 	node, ok := obj.(*v1.Node)
 	if node == nil || !ok {
 		klog.Warningf("nodeAdded: unrecognized object %+v", obj)
+		return
+	}
+
+	if vs.shouldSkipNode(node) {
 		return
 	}
 
@@ -312,6 +334,10 @@ func (vs *VSphere) nodeDeleted(obj interface{}) {
 	node, ok := obj.(*v1.Node)
 	if node == nil || !ok {
 		klog.Warningf("nodeDeleted: unrecognized object %+v", obj)
+		return
+	}
+
+	if vs.shouldSkipNode(node) {
 		return
 	}
 

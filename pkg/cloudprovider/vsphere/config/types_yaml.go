@@ -46,6 +46,9 @@ type NodesYAML struct {
 	// status.addresses fields.
 	ExcludeInternalNetworkSubnetCIDR string `yaml:"excludeInternalNetworkSubnetCidr"`
 	ExcludeExternalNetworkSubnetCIDR string `yaml:"excludeExternalNetworkSubnetCidr"`
+	// Label key that when present on a node, causes the cloud provider to skip processing that node.
+	// If empty, all nodes will be processed.
+	SkipNodeLabel string `yaml:"skipNodeLabel"`
 }
 
 // CPIConfigYAML is the YAML representation

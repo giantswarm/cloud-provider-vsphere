@@ -69,6 +69,9 @@ type GlobalYAML struct {
 	// ipv4 - IPv4 addresses only (Default)
 	// ipv6 - IPv6 addresses only
 	IPFamilyPriority []string `yaml:"ipFamily"`
+	// Label key that when present on a node, causes the cloud provider to skip processing that node.
+	// If empty, all nodes will be processed.
+	SkipNodeLabel string `yaml:"skipNodeLabel"`
 }
 
 // VirtualCenterConfigYAML contains information used to access a remote vCenter

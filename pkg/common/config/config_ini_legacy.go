@@ -48,6 +48,7 @@ func (cci *CommonConfigINI) CreateConfig() *Config {
 	cfg.Global.SecretName = cci.Global.SecretName
 	cfg.Global.SecretNamespace = cci.Global.SecretNamespace
 	cfg.Global.SecretsDirectory = cci.Global.SecretsDirectory
+	cfg.Global.SkipNodeLabel = cci.Global.SkipNodeLabel
 
 	for keyVcConfig, valVcConfig := range cci.VirtualCenter {
 		cfg.VirtualCenter[keyVcConfig] = &VirtualCenterConfig{

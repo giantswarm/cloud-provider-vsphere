@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	v1helper "k8s.io/cloud-provider/node/helpers"
 
+	ccfg "k8s.io/cloud-provider-vsphere/pkg/cloudprovider/vsphere/config"
 	cm "k8s.io/cloud-provider-vsphere/pkg/common/connectionmanager"
 )
 
@@ -77,7 +78,9 @@ func TestInstance(t *testing.T) {
 	 */
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	nm := newMyNodeManager(connMgr)
-	instances := newInstances(&nm.NodeManager)
+	// Create a dummy VSphere instance for testing
+	vs := &VSphere{cfg: &ccfg.CPIConfig{}}
+	instances := newInstances(&nm.NodeManager, vs)
 
 	vm := simulator.Map.Any("VirtualMachine").(*simulator.VirtualMachine)
 	name := strings.ToLower(vm.Name)
@@ -162,7 +165,9 @@ func TestInvalidInstance(t *testing.T) {
 	 */
 	connMgr := cm.NewConnectionManager(cfg, nil, nil)
 	nm := newMyNodeManager(connMgr)
-	instances := newInstances(&nm.NodeManager)
+	// Create a dummy VSphere instance for testing
+	vs := &VSphere{cfg: &ccfg.CPIConfig{}}
+	instances := newInstances(&nm.NodeManager, vs)
 
 	name := ""       //junk name
 	UUID := ""       //junk UUID

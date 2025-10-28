@@ -41,6 +41,7 @@ func (cci *CPIConfigINI) CreateConfig() *CPIConfig {
 			ExternalVMNetworkName:            cci.Nodes.ExternalVMNetworkName,
 			ExcludeInternalNetworkSubnetCIDR: cci.Nodes.ExcludeInternalNetworkSubnetCIDR,
 			ExcludeExternalNetworkSubnetCIDR: cci.Nodes.ExcludeExternalNetworkSubnetCIDR,
+			SkipNodeLabel:                    cci.Nodes.SkipNodeLabel,
 		},
 	}
 

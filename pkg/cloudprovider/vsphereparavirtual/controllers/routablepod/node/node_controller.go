@@ -54,6 +54,8 @@ type Controller struct {
 	clusterNS   string
 
 	ownerRef *metav1.OwnerReference
+
+	skipNodeLabel string
 }
 
 // NewController returns controller that reconciles node
@@ -63,7 +65,8 @@ func NewController(
 	informerManager *k8s.InformerManager,
 	clusterName string,
 	clusterNS string,
-	ownerRef *metav1.OwnerReference) *Controller {
+	ownerRef *metav1.OwnerReference,
+	skipNodeLabel string) *Controller {
 
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(klog.Infof)
@@ -82,6 +85,8 @@ func NewController(
 		clusterNS:   clusterNS,
 
 		ownerRef: ownerRef,
+
+		skipNodeLabel: skipNodeLabel,
 	}
 
 	// watch node change
@@ -231,9 +236,30 @@ func (c *Controller) processNodeDelete(name string) error {
 	return nil
 }
 
+// shouldSkipNode returns true if the node has a label that causes it to be skipped
+func (c *Controller) shouldSkipNode(node *corev1.Node) bool {
+	if c.skipNodeLabel == "" {
+		return false
+	}
+
+	if node.Labels == nil {
+		return false
+	}
+
+	_, hasLabel := node.Labels[c.skipNodeLabel]
+	if hasLabel {
+		klog.V(4).Infof("Skipping node %s due to presence of skip label %s", node.Name, c.skipNodeLabel)
+	}
+	return hasLabel
+}
+
 // when a node is created or updated, check if the node has podCIDR field set.
 // if node's podCIDR is empty, add the node CIDR allocation request to ippool spec.
 func (c *Controller) processNodeCreateOrUpdate(node *corev1.Node) error {
+	if c.shouldSkipNode(node) {
+		klog.V(4).Infof("Skipping node %s for IP pool processing", node.Name)
+		return nil
+	}
 	ippool, err := c.ippoolManager.GetIPPool(c.clusterNS, c.clusterName)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {

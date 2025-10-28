@@ -154,10 +154,15 @@ func (cp *VSphereParavirtual) Initialize(clientBuilder cloudprovider.ControllerC
 	}
 	cp.instances = instances
 
+	// Set the cloud provider reference in instances for skip node logic
+	if inst, ok := instances.(interface{ setCP(*VSphereParavirtual) }); ok {
+		inst.setCP(cp)
+	}
+
 	if RouteEnabled {
 		klog.V(0).Info("Starting routable pod controllers")
 
-		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, ClusterName, clusterNS, ownerRef, vpcModeEnabled, podIPPoolType); err != nil {
+		if err := routablepod.StartControllers(kcfg, client, cp.informMgr, ClusterName, clusterNS, ownerRef, vpcModeEnabled, podIPPoolType, cp.cfg.Global.SkipNodeLabel); err != nil {
 			klog.Errorf("Failed to start Routable pod controllers: %v", err)
 		}
 	}
@@ -227,11 +232,32 @@ func (cp *VSphereParavirtual) HasClusterID() bool {
 	return true
 }
 
+// shouldSkipNode returns true if the node has a label that causes it to be skipped
+func (cp *VSphereParavirtual) shouldSkipNode(node *v1.Node) bool {
+	if cp.cfg == nil || cp.cfg.Global.SkipNodeLabel == "" {
+		return false
+	}
+
+	if node.Labels == nil {
+		return false
+	}
+
+	_, hasLabel := node.Labels[cp.cfg.Global.SkipNodeLabel]
+	if hasLabel {
+		klog.V(4).Infof("Skipping node %s due to presence of skip label %s", node.Name, cp.cfg.Global.SkipNodeLabel)
+	}
+	return hasLabel
+}
+
 // Notification handler when node is added into k8s cluster.
 func (cp *VSphereParavirtual) nodeAdded(obj interface{}) {
 	node, ok := obj.(*v1.Node)
 	if node == nil || !ok {
 		klog.Warningf("nodeAdded: unrecognized object %+v", obj)
+		return
+	}
+
+	if cp.shouldSkipNode(node) {
 		return
 	}
 
@@ -246,6 +272,10 @@ func (cp *VSphereParavirtual) nodeDeleted(obj interface{}) {
 	node, ok := obj.(*v1.Node)
 	if node == nil || !ok {
 		klog.Warningf("nodeDeleted: unrecognized object %+v", obj)
+		return
+	}
+
+	if cp.shouldSkipNode(node) {
 		return
 	}
 
