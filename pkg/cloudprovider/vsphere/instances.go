@@ -71,6 +71,12 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID string) ([]v1.NodeAddress, error) {
 	klog.V(4).Info("instances.NodeAddressesByProviderID() called with ", providerID)
 
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(providerID) {
+		klog.V(4).Infof("NodeAddressesByProviderID: skipping ProviderID %s (not managed by vSphere)", providerID)
+		return []v1.NodeAddress{}, ErrNodeNotFound
+	}
+
 	uid := GetUUIDFromProviderID(providerID)
 
 	if err := i.nodeManager.DiscoverNode(uid, cm.FindVMByUUID); err == nil {
@@ -129,6 +135,13 @@ func (i *instances) InstanceType(ctx context.Context, name types.NodeName) (stri
 // InstanceTypeByProviderID returns the type of the instance identified by providerID.
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
 	klog.V(4).Info("instances.InstanceTypeByProviderID() called")
+
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(providerID) {
+		klog.V(4).Infof("InstanceTypeByProviderID: skipping ProviderID %s (not managed by vSphere)", providerID)
+		return "", ErrNodeNotFound
+	}
+
 	uid := GetUUIDFromProviderID(providerID)
 	if nodeInfo, ok := i.nodeManager.nodeUUIDMap[uid]; ok {
 		return nodeInfo.NodeType, nil
@@ -152,6 +165,14 @@ func (i *instances) CurrentNodeName(ctx context.Context, hostname string) (types
 // providerID is running.
 func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID string) (bool, error) {
 	klog.V(4).Info("instances.InstanceExistsByProviderID() called with ", providerID)
+
+	// Skip nodes that don't belong to vSphere cloud provider
+	// Return an error to prevent this cloud provider from making deletion decisions
+	// about nodes it doesn't manage
+	if !ShouldProcessNode(providerID) {
+		klog.V(4).Infof("InstanceExistsByProviderID: skipping ProviderID %s (not managed by vSphere)", providerID)
+		return false, fmt.Errorf("node with ProviderID %s is not managed by vSphere cloud provider", providerID)
+	}
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)
@@ -196,6 +217,12 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 // InstanceShutdownByProviderID returns true if the instance is in safe state to detach volumes
 func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID string) (bool, error) {
 	klog.V(4).Info("instances.InstanceShutdownByProviderID() called")
+
+	// Skip nodes that don't belong to vSphere cloud provider
+	if !ShouldProcessNode(providerID) {
+		klog.V(4).Infof("InstanceShutdownByProviderID: skipping ProviderID %s (not managed by vSphere)", providerID)
+		return false, fmt.Errorf("node with ProviderID %s is not managed by vSphere cloud provider", providerID)
+	}
 
 	// Check if node has been discovered already
 	uid := GetUUIDFromProviderID(providerID)

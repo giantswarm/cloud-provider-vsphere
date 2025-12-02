@@ -390,7 +390,15 @@ squash:
 docker-image:
 	docker build \
 	-f cluster/images/controller-manager/Dockerfile \
-	-t "$(IMAGE):$(BRANCH_NAME)" \
+	-t "$(IMAGE_NAME):testproviderid" \
+	--build-arg "VERSION=${VERSION}" . \
+
+.PHONY: docker-image-amd64
+docker-image-amd64:
+	docker build \
+	--platform linux/amd64 \
+	-f cluster/images/controller-manager/Dockerfile \
+	-t "$(IMAGE_NAME):testproviderid-amd64" \
 	--build-arg "VERSION=${VERSION}" . \
 
 ################################################################################
@@ -404,7 +412,7 @@ STAGING_BUCKET ?= k8s-staging-cloud-pv-vsphere
 
 IMAGE_NAME ?= cloud-provider-vsphere
 VERSION ?=$(shell git describe --dirty --always)
-# Default image registry and image binary path
+
 IMAGE_PATH := $(STAGING_REGISTRY)/$(IMAGE_NAME):$(VERSION)
 BINARY_PATH := gs://$(STAGING_BUCKET)/$(VERSION)/bin/$(GOOS)/$(GOARCH)
 LOCAL_BINARY_PATH := $(abspath $(BIN_OUT))/vsphere-cloud-controller-manager.$(GOOS)_$(GOARCH)
